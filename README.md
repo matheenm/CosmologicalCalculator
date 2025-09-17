@@ -2,6 +2,8 @@
 ## Description
 A C crogram that takes in a set of RA (right ascension), Dec (declination) ans z (redshift) and returns the Comoving distance and the X, Y, Z coordinates in 3d space.
 
+![RA & Dec on the celestial sphere](https://upload.wikimedia.org/wikipedia/commons/9/98/Ra_and_dec_on_celestial_sphere.png)
+[Source:](https://commons.wikimedia.org/wiki/File:Ra_and_dec_on_celestial_sphere.png)
 ## Input example
 ```
 RA,DEC,Redshift

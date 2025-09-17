@@ -16,7 +16,8 @@ RA,DEC,Redshift
 ```
 
 ## Compilation command and example usage
-
+gcc -o cosmo_calc.o cosmo_calc.c -lm -O3
+./cosmo_calc.o ra_dec.csv ra_dec_out.csv
 
 ## Output
 ```

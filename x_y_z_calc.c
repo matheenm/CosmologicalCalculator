@@ -3,11 +3,9 @@
 #include <math.h>
 
 
-#define MAX_ROWS_GREEN 871419 // Adjust as needed
-#define GREEN_NAME "data.csv" // Adjust as needed
+#define MAX_ROWS_GREEN 871419 
+#define GREEN_NAME "data.csv" 
 #define OUT_NAME_DIST "data_x_y_z.csv"
-#define NUM_CLOSEST 500
-#define NUM_THREADS_PAR 8
 
 const double Omega_m = 0.3;
 const double Omega_L = 0.7;
@@ -46,41 +44,60 @@ typedef struct{
 } Point;
 
 
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        printf("Usage: %s <input_file> <output_file>\n", argv[0]);
+        return -1;
+    }
 
-int main() {
-    printf("read files %s\n",GREEN_NAME);
-
-    Point *points1;
-
-    printf("pre malloc 1\n");
-    // Allocate memory for the array of Person structs
-    points1 = (Point *)malloc(MAX_ROWS_GREEN * sizeof(Point));
-    printf("finished malloc 1\n");
-
-
-    int num_rows1 = MAX_ROWS_GREEN ; // read_csv(GREEN_NAME, points1, MAX_ROWS_GREEN);
-
-    FILE *file = fopen(GREEN_NAME, "r");
-    if (file == NULL) {
+    const char *INPUT_NAME = argv[1];
+    const char *OUTPUT_NAME = argv[2];
+    
+    // Count lines in file (excluding header)
+    FILE *file = fopen(INPUT_NAME, "r");
+    if (!file) {
         perror("Error opening file");
         return -1;
     }
 
+    int MAX_ROWS = 0;
+    char line[256];
+    fgets(line, sizeof(line), file); // Skip header
+    while (fgets(line, sizeof(line), file)) MAX_ROWS++;
+    fclose(file);
+    
+    printf("read files %s\n", INPUT_NAME);
+    Point *points = (Point *)malloc(MAX_ROWS * sizeof(Point));
+    if (!points) {
+        perror("Memory allocation failed");
+        return -1;
+    }
+
+    // Read data points
+    file = fopen(INPUT_NAME, "r");
+    if (!file) {
+        perror("Error opening file");
+        free(points);
+        return -1;
+    }
+    
+    fgets(line, sizeof(line), file); // Skip header
     int num_rows = 0;
     double ra,dec,z;
-    char line[100];
-
-    while (fgets(line, sizeof(line), file) != NULL && num_rows < MAX_ROWS_GREEN) {
-        sscanf(line, "%lf,%lf,%lf",&ra,&dec,&z);
-       	points1[num_rows].ra=ra;
-	    points1[num_rows].dec=dec;
-	    points1[num_rows].z=z;
-        num_rows++;
+    while (fgets(line, sizeof(line), file) && num_rows < MAX_ROWS) {
+        double ra, dec, z;
+        if (sscanf(line, "%lf,%lf,%lf", &ra, &dec, &z) == 3) {
+            points[num_rows].ra = ra;
+            points[num_rows].dec = dec;
+            points[num_rows].z = z;
+            num_rows++;
+        }
     }
     fclose(file);
-    printf("finished read files %s\n",GREEN_NAME);
+    printf("Finished reading %d rows from %s\n", num_rows, INPUT_NAME);
 
-    FILE *output_file_distance = fopen(OUT_NAME_DIST, "w");
+
+    FILE *output_file_distance = fopen(OUTPUT_NAME, "w");
     if (output_file_distance == NULL) {
         perror("Error opening output file");
         return 1;
@@ -89,15 +106,15 @@ int main() {
     fprintf(output_file_distance, "RA,DEC,Redshift,Comoving_dist,X,Y,Z\n");
   
 
-    for (int i = 0; i < num_rows1; i++) {
+    for (int i = 0; i < num_rows; i++) {
 	    if(i%10000==0)printf("processing outer loop%d\n",i);
-   		double d_C1 = comoving_distance(points1[i].z, Omega_m, Omega_L, H0);
+   		double d_C1 = comoving_distance(points[i].z, Omega_m, Omega_L, H0);
    		double x1,y1,z1;
-        cartesian_coordinates(points1[i].ra, points1[i].dec,d_C1,&x1,&y1,&z1);
-        fprintf(output_file_distance, "%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",points1[i].ra, points1[i].dec,points1[i].z,d_C1,x1,y1,z1);
+        cartesian_coordinates(points[i].ra, points[i].dec,d_C1,&x1,&y1,&z1);
+        fprintf(output_file_distance, "%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",points[i].ra, points[i].dec,points[i].z,d_C1,x1,y1,z1);
     }
 
     fclose(output_file_distance);
-    free(points1);
+    free(points);
     return 0;
 }
